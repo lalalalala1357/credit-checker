@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>上傳課程計畫表</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #pdf-preview { border: 1px solid #ccc; padding: 10px; max-height: 600px; overflow-y: auto; }
+    canvas { width: 100%; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>上傳課程計畫表 PDF</h1>
+  <input type="file" id="pdf-upload" accept="application/pdf">
+  <div id="pdf-preview"></div>
+
+  <script>
+    const fileInput = document.getElementById('pdf-upload');
+    const previewDiv = document.getElementById('pdf-preview');
+
+    fileInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file || file.type !== 'application/pdf') {
+        alert('請上傳 PDF 檔案');
+        return;
+      }
+
+      const fileReader = new FileReader();
+      fileReader.onload = async function () {
+        const typedArray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+
+        previewDiv.innerHTML = '';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 });
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({ canvasContext: context, viewport }).promise;
+          previewDiv.appendChild(canvas);
+        }
+      };
+
+      fileReader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
